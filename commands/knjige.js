@@ -1,63 +1,50 @@
-const {SlashCommandBuilder, EmbedBuilder, Colors} = require('discord.js');
-const wait = require('node:timers/promises').setTimeout;
-
+const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags} = require('discord.js');
 require('dotenv').config();
-const mysql = require('mysql2');
-
-const connection = mysql.createConnection({
-    host: process.env.CONN_URL,
-    port: 3306,
-    user: process.env.CONN_USER,
-    password: process.env.CONN_PASSWORD,
-    database: process.env.CONN_DB
-});
-
-
-connection.connect(function(error) {
-    if(error) {
-        console.error('Error connecting: ' + error.stack);
-        return;
-    }
-
-    console.log('Connected as id ' + connection.threadId);
-});
-
+const connection = require('../db.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('knjige')
+        .setName('књиге')
         .setDescription('Приказ свих доступних књига.'),
     async execute(interaction) {
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        await wait(4000);
-
+        
         let allBooksList = [];
         let embed = new EmbedBuilder();
+        embed.setTitle("Доступне књиге");
+        embed.setColor(Colors.Red);
+        
+        try {
+            const [results] = await connection.promise().query(
+                "SELECT knjiga_broj, knjiga_ime, skracenica FROM knjige"
+            );
 
-        connection.query("SELECT knjiga_broj, knjiga_ime, skracenica FROM knjige", async function(error, results) {
-            if(error){
-                interaction.reply("Упс, дошло је до грешке.");
-                throw error;
-            } 
-                embed 
-                .setTitle("Доступне књиге")
-                .setColor(Colors.Red);
             for(const result of results) {
                 allBooksList.push(result);
             }
 
-            let bookListStr;
+            let knjigeNovogZaveta = "";
+            let knjigeStarogZaveta = "";
             for(const book of allBooksList) {
-                bookListStr += book + '\n';
+                if (book.knjiga_broj >= 40) {
+                    knjigeNovogZaveta += book.knjiga_broj + ".  " + book.knjiga_ime + "  [" + book.skracenica + "]\n";
+                } else {
+                    knjigeStarogZaveta += book.knjiga_broj + ".  " + book.knjiga_ime + "  [" + book.skracenica + "]\n";
+                }   
             }
 
-            
-            embed.setDescription(bookListStr);
+            embed.setDescription("**КЊИГЕ СТАРОГ ЗАВЕТА**\n" + knjigeStarogZaveta + "\n**КЊИГЕ НОВОГ ЗАВЕТА**\n" + knjigeNovogZaveta);
 
+
+            console.log(`Корисник ${interaction.user.tag} је извршио команду /књиге.`);
             await interaction.editReply({embeds: [embed]});
+            //console.log(results);
 
-        });
-    }
+        } catch(error) {
+            console.error(error);
+        }
+       
+    },
 };
 
