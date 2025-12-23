@@ -17,7 +17,7 @@ module.exports = {
         
         try {
             const [results] = await connection.promise().query(
-                "SELECT knjiga_broj, knjiga_ime, skracenica FROM knjige"
+                "SELECT knjiga_ime, skracenica FROM knjige"
             );
 
             for(const result of results) {
@@ -26,7 +26,10 @@ module.exports = {
 
             let knjigeNovogZaveta = "";
             let knjigeStarogZaveta = "";
+            let brojKnjige = 0;
             for(const book of allBooksList) {
+                brojKnjige++;
+                book.knjiga_broj = brojKnjige;
                 if (book.knjiga_broj >= 40) {
                     knjigeNovogZaveta += book.knjiga_broj + ".  " + book.knjiga_ime + "  [" + book.skracenica + "]\n";
                 } else {
