@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags} = require('discord.js');
 require('dotenv').config();
-const connection = require('../db.js');
+const pool = require('../db.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,7 +16,7 @@ module.exports = {
         embed.setColor(Colors.Red);
         
         try {
-            const [results] = await connection.promise().query(
+            const [results] = await pool.promise().query(
                 "SELECT knjiga_ime, skracenica FROM knjige"
             );
 
