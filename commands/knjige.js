@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags} = require('discord.js');
 require('dotenv').config();
-const pool = require('../db.js');
+const {pool} = require('../db.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
