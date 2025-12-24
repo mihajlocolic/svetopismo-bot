@@ -1,9 +1,8 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags, InteractionContextType} = require('discord.js');
+const { pool } = require('../db.js');
 require('dotenv').config();
-const connection = require('../db.js');
 
 
-// Класа у коју се убацују подаци и преко које се приказују тражени подаци кориснику.
 class Verse {
     constructor(bookTitle, bookChapter, chapterStart, chapterEnd, verses) {
         this.bookTitle = bookTitle;
@@ -42,7 +41,7 @@ module.exports = {
         ),
     async execute(interaction) {
 
-        await interaction.deferReply({flags: MessageFlags.Ephemeral});
+        await interaction.deferReply();
 
         const inputBook = interaction.options.getString("књига");
         const inputChapter = interaction.options.getNumber("глава");
@@ -55,15 +54,48 @@ module.exports = {
                 // Do the mysql query.
                 const verse = await getUserRequestedVerses(inputBook, inputChapter, inputStartVerse, inputEndVerse);
 
-                await interaction.editReply(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart} - ${verse.chapterEnd}\n${verse.verses}`);
-                console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse} - ${inputEndVerse}.`);  
+              
+                if(verse != null || verse != undefined) {
+                    const verseStartIndex = verse.verses.indexOf(`${inputStartVerse}.`);
+                    const verseEndIndex = verse.verses.indexOf(`${inputEndVerse + 1}.`);
+                    if(!verse.verses.includes(`${inputStartVerse}.`) || !verse.verses.includes(`${inputEndVerse}.`)) {
+                        await interaction.editReply(`Погрешан унос стихова, молим Вас проверите да ли сте исправно унели почетни и завршни стих у књизи ${verse.bookTitle}, глава ${inputChapter}.`);
+                    } else {
+
+                        const embed = new EmbedBuilder()
+                            .setColor(Colors.Red)
+                            .setTitle(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart} - ${verse.chapterEnd}`)
+                            .setDescription((verse.verses.substring(verseStartIndex, verseEndIndex).length > 4000) ? verse.verses.substring(verseStartIndex, verseEndIndex).substring(0, 3997) + "..." : verse.verses.substring(verseStartIndex, verseEndIndex));
+
+                        await interaction.editReply({embeds: [embed]});
+                        console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse} - ${inputEndVerse}.`);  
+                    }
+                } else {
+                    await interaction.editReply(`Нису пронађени стихови за унос: ${inputBook} ${inputChapter} : ${inputStartVerse} - ${inputEndVerse}.`);
+                }
             } else {
 
                 // Do the mysql query.
                 const verse = await getUserRequestedVerses(inputBook, inputChapter, inputStartVerse, null);
 
-                await interaction.editReply(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart}\n${verse.verses}`);
-                console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse}`);
+                if(verse != null || verse != undefined) {
+                    
+                    if(!verse.verses.includes(`${inputStartVerse}.`)) {
+                        await interaction.editReply(`Погрешан унос стихова, молим Вас проверите да ли сте исправно унели почетни и завршни стих у књизи ${verse.bookTitle}, глава ${inputChapter}.`);
+                    
+                    } else {
+
+                        const embed = new EmbedBuilder()
+                            .setColor(Colors.Red)
+                            .setTitle(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart}`)
+                            .setDescription(verse.verses.substring(verse.verses.indexOf(`${inputStartVerse}.`), verse.verses.indexOf(`${inputStartVerse + 1}.`)));
+
+                        await interaction.editReply({embeds: [embed]});
+                        console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse}`);
+                    }
+                } else {
+                    await interaction.editReply(`Нису пронађени стихови за унос: ${inputBook} ${inputChapter} : ${inputStartVerse}.`);
+                }
             }
         } catch(error) {
             console.log(error);
@@ -73,13 +105,17 @@ module.exports = {
 
 async function getUserRequestedVerses(book, chapter, startVerse, endVerse) {
     try {
-        const [rows] = await connection.promise().query(
+        const [rows] = await pool.promise().query(
             "SELECT glave.stihovi, knjige.knjiga_ime FROM glave JOIN knjige ON glave.knjiga_id = knjige.knjiga_id WHERE glava_broj = ? AND glave.knjiga_id = (SELECT knjiga_id FROM knjige WHERE skracenica = ?)",
             [chapter, book]
         );
 
-        const verse = new Verse(rows[0].knjiga_ime, chapter, startVerse, (endVerse) ? endVerse : null, rows[0].stihovi);
-        return verse;
+        if(rows[0] != null || rows[0] != undefined) {
+            const verse = new Verse(rows[0].knjiga_ime, chapter, startVerse, (endVerse) ? endVerse : null, rows[0].stihovi);
+            return verse;
+        } else {
+            return null;
+        }
 
     } catch (error) {
         console.error(error);
