@@ -1,6 +1,10 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags} = require('discord.js');
 require('dotenv').config();
 const {pool} = require('../db.js');
+const packageInfo = require('../package.json');
+const botVersion = packageInfo.version;
+
+
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -38,7 +42,7 @@ module.exports = {
             }
 
             embed.setDescription("**КЊИГЕ СТАРОГ ЗАВЕТА**\n" + knjigeStarogZaveta + "\n**КЊИГЕ НОВОГ ЗАВЕТА**\n" + knjigeNovogZaveta);
-
+            embed.setFooter({text:`Свето Писмо Бот - v${botVersion}`});
 
             console.log(`Корисник ${interaction.user.tag} је извршио команду /књиге.`);
             await interaction.editReply({embeds: [embed]});

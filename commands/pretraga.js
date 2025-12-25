@@ -1,6 +1,8 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags, InteractionContextType} = require('discord.js');
 const { pool } = require('../db.js');
 require('dotenv').config();
+const packageInfo = require('../package.json');
+const botVersion = packageInfo.version;
 
 
 class Verse {
@@ -65,7 +67,8 @@ module.exports = {
                         const embed = new EmbedBuilder()
                             .setColor(Colors.Red)
                             .setTitle(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart} - ${verse.chapterEnd}`)
-                            .setDescription((verse.verses.substring(verseStartIndex, verseEndIndex).length > 4000) ? verse.verses.substring(verseStartIndex, verseEndIndex).substring(0, 3997) + "..." : verse.verses.substring(verseStartIndex, verseEndIndex));
+                            .setDescription((verse.verses.substring(verseStartIndex, verseEndIndex).length > 4000) ? verse.verses.substring(verseStartIndex, verseEndIndex).substring(0, 3997) + "...\n**Текст исечен због ограничења**" : verse.verses.substring(verseStartIndex, verseEndIndex))
+                            .setFooter({text:`Свето Писмо Бот - v${botVersion}`});
 
                         await interaction.editReply({embeds: [embed]});
                         console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse} - ${inputEndVerse}.`);  
@@ -88,7 +91,8 @@ module.exports = {
                         const embed = new EmbedBuilder()
                             .setColor(Colors.Red)
                             .setTitle(`${verse.bookTitle} ${verse.bookChapter} : ${verse.chapterStart}`)
-                            .setDescription(verse.verses.substring(verse.verses.indexOf(`${inputStartVerse}.`), verse.verses.indexOf(`${inputStartVerse + 1}.`)));
+                            .setDescription(verse.verses.substring(verse.verses.indexOf(`${inputStartVerse}.`), verse.verses.indexOf(`${inputStartVerse + 1}.`)))
+                            .setFooter({text:`Свето Писмо Бот - v${botVersion}`});
 
                         await interaction.editReply({embeds: [embed]});
                         console.log(`Корисник ${interaction.user.tag} је извршио команду /претрага са параметрима: ${inputBook} ${inputChapter} : ${inputStartVerse}`);

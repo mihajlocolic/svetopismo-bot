@@ -1,4 +1,7 @@
 const {SlashCommandBuilder, EmbedBuilder, Colors, MessageFlags} = require('discord.js');
+const packageInfo = require('../package.json');
+const botVersion = packageInfo.version;
+
 
 
 module.exports = {
@@ -15,6 +18,7 @@ module.exports = {
                 { name: "/књиге", value: "Приказује списак свих доступних књига у Светоме Писму и њихове скраћенице." },
                 { name: "/претрага <књига (скраћеница)> <глава> <почетни-стих> <завршни-стих (опционо)>", value: "Претражује и приказује стихове из Светог Писма на основу унетих параметара.\n"}
             )
+            .setFooter({text:`Свето Писмо Бот - v${botVersion}`});
 
         await interaction.editReply({embeds: [embed]});
     }
